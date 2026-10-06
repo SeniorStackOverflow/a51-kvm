@@ -74,3 +74,7 @@ Boot packing replaces the uncompressed arm64 kernel in the tested Android boot-v
 Your boot hash will differ if your ramdisk, compiler build environment or kernel timestamp differs. The reference boot was a local rooted image and is not redistributed. Firmware compatibility comes from using the audited firmware and layout, not requiring someone else's personal ramdisk hash.
 
 Next: [installation and recovery](install.md).
+
+For native containers on the same KVM backend, use the separate
+[Docker build profile](docker.md). It supplies its own full config and optional
+cpuset compatibility patch; `KERNEL_PROFILE=kvm` remains the default.

@@ -17,9 +17,20 @@ cc="$tc/clang-4639204/bin/clang.real"
 [[ -x "$cc" ]] || cc="$tc/clang-4639204/bin/clang"
 "$cc" --version | grep -q 'clang version 6.0.1'
 args=(O="$out" LOCALVERSION=-22755563 CC="$cc" CROSS_COMPILE="$tc/gcc-aarch64-4.9/bin/aarch64-linux-android-" HOSTCC='gcc-11 -fcommon' HOSTCXX=g++-11 KCFLAGS="-I$src")
+case "${KERNEL_PROFILE:-kvm}" in
+    kvm) config="$repo/kernel/a51.config" ;;
+    docker)
+        git -C "$src" apply --reverse --check "$repo/kernel/docker-cpuset.patch"
+        config="$repo/kernel/docker.config"; args+=(LOCALVERSION=-22755563-docker)
+        ;;
+    *) echo 'KERNEL_PROFILE must be kvm or docker' >&2; exit 1 ;;
+esac
 mkdir -p "$out"
-cp "$repo/kernel/a51.config" "$out/.config"
+cp "$config" "$out/.config"
 make -C "$src" "${args[@]}" olddefconfig
+if [[ "${KERNEL_PROFILE:-kvm}" == docker ]]; then
+    python3 "$repo/tools/check_docker_config.py" "$out/.config"
+fi
 for required in 'CONFIG_KVM=y' 'CONFIG_UH=y' '# CONFIG_UH_RKP is not set' 'CONFIG_SOC_EXYNOS9610=y' 'CONFIG_HARDEN_BRANCH_PREDICTOR=y'; do
     grep -qxF "$required" "$out/.config" || { echo "Missing $required" >&2; exit 1; }
 done
