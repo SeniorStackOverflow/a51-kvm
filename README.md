@@ -27,7 +27,9 @@ Tested on **SM-A515F, Android 11, A515FXXU5EUJ4**, unlocked bootloader, kernel *
 An optional [native Docker profile](docs/docker.md) uses kernel
 `4.14.113-22755563-docker` and preserves this KVM backend. Hardware checks include
 an actual Docker container with overlay2, default seccomp, CPU affinity/quota,
-enforced memory/process limits and veth/bridge traffic. See the
+enforced memory/process limits and veth/bridge traffic. Containers also have
+[verified IPv4 internet access](evidence/docker-internet-summary.json): registry
+pulls, DNS, HTTP(S) and package downloads on default and user-created bridges. See the
 [Docker evidence](evidence/docker-summary.json) and build/Android compatibility details.
 
 The [sanitized hardware evidence](evidence/hardware-summary.json) records the measurements. This is a research prototype for **one audited firmware layout**. Full Linux guests, SMP guests, long-running workloads, suspend-to-RAM and other A51 variants remain untested. CI exercises a synthetic EL2 harness, separate from the handset results.
@@ -56,7 +58,7 @@ On Ubuntu or WSL Ubuntu:
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y make python3 git binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm
+sudo apt-get install -y make python3 git binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm shellcheck
 git clone https://github.com/SeniorStackOverflow/a51-kvm.git
 cd a51-kvm
 make check

@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install cross tools and QEMU
-        run: sudo apt-get update && sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm
+        run: sudo apt-get update && sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm shellcheck
       - name: Build and exercise EL2 handoff
         run: make check
       - name: Upload our generated code and test output

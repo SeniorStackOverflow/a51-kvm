@@ -4,7 +4,7 @@
 
 **Аппаратная виртуализация заработала на настоящем SM-A515F с Exynos 9611.** Здесь сохранены код, патч ядра, точная конфигурация, инструменты сборки и результаты проверок — чтобы следующий человек мог повторить работу и понять, почему она сработала.
 
-Доступен отдельный [профиль ядра для нативного Docker](docs/docker.md): cgroups, namespaces, OverlayFS, veth, bridge, netfilter и seccomp. Проверены настоящий контейнер Docker, ограничения памяти и процессов, CPU quota/affinity и обмен данными через bridge. KVM сохранён; [результаты](evidence/docker-summary.json) включают повторные аппаратные проверки.
+Доступен отдельный [профиль ядра для нативного Docker](docs/docker.md): cgroups, namespaces, OverlayFS, veth, bridge, netfilter и seccomp. Проверены настоящий контейнер Docker, ограничения памяти и процессов, CPU quota/affinity и обмен данными через bridge. У контейнеров есть [проверенный выход в интернет по IPv4](evidence/docker-internet-summary.json): загрузка образов, DNS, HTTP(S) и загрузка пакетов в стандартной и отдельно созданной bridge-сети. KVM сохранён; [результаты](evidence/docker-summary.json) включают повторные аппаратные проверки.
 
 ## Проверенный результат
 
@@ -33,7 +33,7 @@
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y make python3 git binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm
+sudo apt-get install -y make python3 git binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm shellcheck
 git clone https://github.com/SeniorStackOverflow/a51-kvm.git
 cd a51-kvm
 make check
