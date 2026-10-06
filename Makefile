@@ -8,7 +8,7 @@ OBJDUMP := $(CROSS)objdump
 NM := $(CROSS)nm
 CC := $(CROSS)gcc
 
-.PHONY: all gateway probes docker-probes test check
+.PHONY: all gateway probes docker-probes test check shell-check
 all: gateway probes
 gateway: $(BUILD)/gateway.bin $(BUILD)/publisher.bin $(BUILD)/marker.bin $(BUILD)/symbols.txt
 probes: $(BUILD)/kvm-guest-probe $(BUILD)/kvm-timer-probe $(BUILD)/kvm-timer-guest.bin
@@ -63,6 +63,9 @@ test: gateway $(BUILD)/test-gateway.bin
 	python3 tools/uh_image.py check-gateway --build $(BUILD)
 	python3 -m unittest discover -s tests -p 'test_*.py' -v
 
-check: all docker-probes test
+shell-check:
+	shellcheck -s sh scripts/docker-network.sh scripts/start-docker-test.sh scripts/stop-docker-test.sh
+
+check: all docker-probes test shell-check
 	python3 -m py_compile tools/*.py
 	python3 tools/check_docker_config.py

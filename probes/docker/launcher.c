@@ -23,9 +23,11 @@ int main(int argc,char**argv){
  const char*names[]={"cpu","cpuacct","cpuset","memory","freezer","devices","pids","blkio"};
  const char*android[]={"/dev/cpuctl","/acct","/dev/cpuset","/dev/memcg","/dev/freezer",NULL,NULL,NULL};
  for(int i=0;i<8;i++){char p[256];snprintf(p,sizeof(p),"/sys/fs/cgroup/%s",names[i]);dir(p);if(android[i])ck(mount(android[i],p,NULL,MS_BIND|MS_REC,NULL),names[i]);else ck(mount("cgroup",p,"cgroup",0,names[i]),names[i]);}
- // Host namespaces, mounts and Android firewall are untouched. Docker owns a private netns.
+ // Docker owns a private netns; the host-side supervisor adds a scoped uplink.
  setenv("PATH","/data/local/tmp/codex-a51-docker-bin:/system/bin:/system/xbin",1);
  setenv("DOCKER_TMPDIR","/data/local/tmp/codex-a51-docker/tmp",1);
+ // Go's Linux defaults cannot discover Android's CA directory in this layout.
+ setenv("SSL_CERT_DIR","/system/etc/security/cacerts:/apex/com.android.conscrypt/cacerts",1);
  dir("/data/local/tmp/codex-a51-docker");dir("/data/local/tmp/codex-a51-docker/tmp");
  if(runsh("/system/bin/ip link set lo up"))return 1;
  dir("/data/local/tmp/codex-a51-docker/data");

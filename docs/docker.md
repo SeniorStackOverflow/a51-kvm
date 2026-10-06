@@ -72,7 +72,7 @@ compatibility-warning entries. Its reflection-based probe is in
 `probes/docker/VintfProbe.java` and can be compiled to dex using JDK and Android
 D8, then run as root with `app_process`. SELinux remained `Enforcing`.
 
-## Reproduce the isolated native-container test
+## Run native Docker with internet access
 
 The tested userspace is the official static **Docker 27.5.1 aarch64** archive
 and official **runc 1.3.6 arm64** binary. Download them from
@@ -91,6 +91,8 @@ make docker-probes
 adb -s "$SERIAL" push docker /data/local/tmp/codex-a51-docker-bin
 adb -s "$SERIAL" push build/docker-daemon-launcher /data/local/tmp/docker-daemon-launcher
 adb -s "$SERIAL" push scripts/start-docker-test.sh /data/local/tmp/start-docker-test.sh
+adb -s "$SERIAL" push scripts/stop-docker-test.sh /data/local/tmp/stop-docker-test.sh
+adb -s "$SERIAL" push scripts/docker-network.sh /data/local/tmp/docker-network.sh
 adb -s "$SERIAL" shell su -c 'chmod 755 /data/local/tmp/codex-a51-docker-bin/* /data/local/tmp/docker-daemon-launcher'
 ```
 
@@ -110,11 +112,70 @@ kernel; ext4 supplies a supported persistent upperdir while the backing file
 stays within encrypted `/data`.
 
 The daemon has private mount and network namespaces. Existing Android cgroup
-controllers are bound into its view; Docker adds its own subgroups. Android
-tasks and its firewall stay in their existing namespaces. The test network
-has a bridge and containers, with **no uplink to Android's internet connection**.
-This launcher is a reproducible test setup, not a boot service or a production
-network deployment.
+controllers are bound into its view; Docker adds its own subgroups. Docker
+owns its bridge and firewall in its private network namespace.
+
+The start script waits for the Docker API and connects this namespace to Android
+with a veth pair (`a51-dk0` / `a51-dk1`, `10.231.43.0/30`). The network supervisor
+adds only two private firewall chains and three scoped policy rules at priorities
+9000–9002. It requests forwarding through netd as the `a51-docker` requester,
+so shutdown releases that request without disabling another tethering requester.
+Android's existing chains, default policies, routes, VPN and application traffic
+are preserved. The supervisor refuses collisions with its interface, chains,
+rule priorities or subnet.
+
+Every five seconds the supervisor asks Android where root's ordinary IPv4
+internet traffic goes and selects that routing table and outgoing interface.
+It refreshes the uplink when Android's default network changes; no available
+IPv4 route leaves Docker's outgoing traffic blocked. A terminal unreachable rule
+prevents accidental routing through a different Android table. This follows
+root's internet route; it does not replicate Android's per-application VPN policy
+or provide a VPN kill switch for containers. Docker networks are still subject
+to their native rules, including `--internal` isolation.
+
+Containers use public DNS servers `1.1.1.1` and `8.8.8.8`. The daemon uses
+Android's system CA directories to verify registry HTTPS. Container HTTPS uses
+the CA certificates supplied by its image. The ordinary default bridge and
+user-created bridge networks have IPv4 internet access. Container IPv6 and
+inbound connections from the LAN are outside this uplink's scope.
+
+Use the CLI from Android root:
+
+```sh
+adb -s "$SERIAL" shell su -c '/data/local/tmp/codex-a51-docker-bin/docker --host unix:///data/local/tmp/codex-a51-docker/docker.sock pull alpine:3.22'
+adb -s "$SERIAL" shell su -c '/data/local/tmp/codex-a51-docker-bin/docker --host unix:///data/local/tmp/codex-a51-docker/docker.sock run --rm alpine:3.22 wget -qO- https://example.com'
+adb -s "$SERIAL" shell su -c 'sh /data/local/tmp/docker-network.sh status'
+python3 tools/validate_docker_internet.py --serial "$SERIAL"
+```
+
+The internet validator exercises a real registry pull, external DNS, HTTP to an
+IPv4 address, certificate-verified HTTPS (including rejection of an untrusted
+certificate) and `apk update` on both the default
+bridge and a user-created bridge. It also checks container-name DNS, ICMP between
+containers, lack of internet on an internal bridge, Android connectivity,
+unchanged boot ID and SELinux `Enforcing`.
+
+For the original offline test, start with
+`sh /data/local/tmp/start-docker-test.sh --isolated`. The launcher is manually
+started; it does not install a boot service. The network supervisor automatically
+removes its uplink and rules after the daemon exits. Explicit stop also cleans
+up the network:
+
+```sh
+adb -s "$SERIAL" shell su -c 'sh /data/local/tmp/stop-docker-test.sh'
+```
+
+Network logs are in `/data/local/tmp/codex-a51-docker-network.log`. If a supervisor
+was forcibly killed, run `docker-network.sh stop` before starting again; it
+recovers stale state only when the interface has its expected ownership alias.
+No global firewall flushing is used.
+
+The routing and firewall design follows Android's
+[netd forwarding API](https://android.googlesource.com/platform/system/netd/+/451debdc6bff2ffda2f4c85f7de244d52b05c806/server/CommandListener.cpp)
+and Docker's [bridge networking](https://docs.docker.com/engine/network/drivers/bridge/)
+and [iptables behavior](https://docs.docker.com/engine/network/firewall-iptables/).
+
+## Validate native container resources
 
 ```sh
 python3 tools/validate_docker_device.py --serial "$SERIAL"
@@ -130,8 +191,7 @@ CPU affinity/quota, 32-task enforcement and a UDP round trip through veth/bridge
 Memory and memory+swap are both limited to 64 MiB, so only the over-limit child
 is killed and Android's zRAM cannot absorb the test allocation.
 
-Stop the test daemon through the PID in its own `dockerd.pid`, after verifying
-the process command line uses this test socket. The launcher has no autostart.
+Stop through `stop-docker-test.sh`; it verifies the daemon uses this test socket.
 Results and exact reference hashes are in [docker-summary.json](../evidence/docker-summary.json).
 
 Moby 27.5.1's official `contrib/check-config.sh` reported every generally

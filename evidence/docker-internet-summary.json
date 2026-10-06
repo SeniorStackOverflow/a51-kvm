@@ -1,0 +1,87 @@
+{
+  "recorded_utc": "2026-10-06T09:22:13.816016+00:00",
+  "model": "SM-A515F",
+  "firmware": "A515FXXU5EUJ4",
+  "kernel": "4.14.113-22755563-docker",
+  "docker_version": "27.5.1",
+  "image": "alpine:3.22",
+  "image_digests": [
+    "alpine@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8"
+  ],
+  "platform": "arm64",
+  "uplink": "IPv4 through Android root default route, verified over Wi-Fi",
+  "registry_pull_verified": true,
+  "registry_download_digest": "sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8",
+  "default_bridge_checks": [
+    "PASS external DNS",
+    "PASS IPv4 HTTP without DNS",
+    "PASS HTTPS with certificate verification",
+    "PASS untrusted HTTPS certificate rejected",
+    "PASS package repository downloads"
+  ],
+  "user_bridge_checks": [
+    "PASS container-name DNS and bridge round trip",
+    "PASS external DNS",
+    "PASS IPv4 HTTP without DNS",
+    "PASS HTTPS with certificate verification",
+    "PASS untrusted HTTPS certificate rejected",
+    "PASS package repository downloads"
+  ],
+  "internal_bridge_check": "PASS internal bridge has no internet egress",
+  "lifecycle": {
+    "passed": true,
+    "checks": [
+      "internet survives full daemon restart",
+      "duplicate start rejected",
+      "missing Android route blocks container egress",
+      "internet recovers automatically after route returns",
+      "killed supervisor recovered without changing Android rules or forwarding state",
+      "daemon exit automatically removes uplink and restores Android state",
+      "isolated start retains original offline behavior",
+      "explicit stop restores exact Android firewall, policy rules and forwarding state",
+      "final daemon left running with verified HTTPS internet and unchanged Android boot"
+    ],
+    "boot_id_unchanged": true,
+    "selinux": "Enforcing",
+    "baseline_sha256": {
+      "rules": "a108a1926439488e5bd2d811b78f8360af5852574b2283eae76895143a8ab5a2",
+      "filter": "67837c037765019a217f2e8134f2d4b46bc3aa8b39cc2e5a911257d6b02b17b2",
+      "nat": "53b6f8ff12e122069537aa6378555e901c2aced2905baf998463efc4734dae71",
+      "mangle": "815dd17c50282a984dfdf8ac6facccaefc63450821bcba2603e423dd4fa5d898",
+      "raw": "1d591ad0e4ce7ddb4c979ab89f32ccec8a5fe40b8cf42163f2babe46710f8662",
+      "forwarding": "758008efb9c8566d26b4ae6683afde9ae00feb61c1d2dbd7cb8c09bda30d2627"
+    }
+  },
+  "kvm_regression": {
+    "passed": true,
+    "boot_id_unchanged": true,
+    "guest_cycles": 12,
+    "guest_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "timer_cpus": [
+      0,
+      4
+    ],
+    "idle_migration_passed": true
+  },
+  "android_connectivity_verified": true,
+  "selinux": "Enforcing",
+  "boot_id_unchanged": true,
+  "source_sha256": {
+    "scripts/docker-network.sh": "34685437a66a297091d13ee1a5f3465049c77d3d79b2e2cc9129553f380efd2d",
+    "scripts/start-docker-test.sh": "737c5825ae70f92f4fdbd65baac94b68b950cd82f170431020905ea7bd51565d",
+    "scripts/stop-docker-test.sh": "a70ad1e3d6898a93b22be6153661dada1b795b6ac013fb48259e52a47fc6f2fe",
+    "probes/docker/launcher.c": "9f843066a78d4a681b12c9d7336b3e9576c19c6045c93a7cb0a45b3ae0e29896",
+    "tools/validate_docker_internet.py": "b35c46cd64867f3ecd1de30633e8c0f1cd276351ae3eec80f7e82e5da01abc3f"
+  },
+  "scope": "Real registry download, DNS, HTTP, certificate-verified HTTPS and APK repository downloads; default/user-defined IPv4 bridges and internal-network isolation; recovery after route loss, daemon exit and supervisor kill. Wi-Fi measured; mobile handover, container IPv6, LAN ingress, per-app VPN policy and long-term workloads not measured. Daemon left running with internet access.",
+  "passed": true
+}

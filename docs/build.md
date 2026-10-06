@@ -6,7 +6,7 @@ The handset result used Linux 4.14.113, Samsung's A515FXXU5EUJ4 source, Android 
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y make python3 git binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm \
+sudo apt-get install -y make python3 git binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm shellcheck \
   gcc-11 g++-11 bc bison flex libssl-dev libelf-dev curl xz-utils
 make check
 ```
