@@ -1,0 +1,63 @@
+{
+  "target": {
+    "model": "SM-A515F",
+    "firmware": "A515FXXU5EUJ4",
+    "android": "11"
+  },
+  "audit": {
+    "kernel": "4.14.113-22755563-docker",
+    "build": "#3 SMP PREEMPT Tue Oct 6 11:35:45 EEST 2026",
+    "boot_sha256": "88a7536d2639a0159605b84cf0b409ca1a010ba127bb12eca09e6d4c7239b3df",
+    "kernel_image_sha256": "51d23a44999eac3e663b3922c2c8a049e48fa4b20ce3d783255f541b83a3202f",
+    "config_sha256": "e1fa9000f71dc858acc51477156627c9852b7c1f1bc8ea24ae0cba996a1e90ee",
+    "live_config_sha256": "e1fa9000f71dc858acc51477156627c9852b7c1f1bc8ea24ae0cba996a1e90ee",
+    "all_81_required_features_builtin": true,
+    "vintf_result": 0,
+    "vintf_module_applied_on_boot": true,
+    "android_boot_completed": true,
+    "android_warning_log_matches": 0,
+    "selinux": "Enforcing",
+    "moby_required_checks_passed": true,
+    "moby_check_exitcode_including_optional": 1,
+    "other_partitions_unchanged": true
+  },
+  "docker": {
+    "passed": true,
+    "engine": "27.5.1",
+    "runc": "1.3.6",
+    "storage_driver": "overlay2",
+    "backing": "ext4 file in encrypted Android data",
+    "default_seccomp": true,
+    "pid1": true,
+    "sysvipc": true,
+    "cpuset_alias_reads_and_writes": true,
+    "cpu_quota": 50000,
+    "cpu_period": 100000,
+    "cpuset_cpus": "0-1",
+    "memory_bytes": 67108864,
+    "memory_and_swap_bytes": 67108864,
+    "pids_max": 32,
+    "memory_child_killed_only": true,
+    "udp_bridge_round_trip": true
+  },
+  "kvm": {
+    "passed": true,
+    "vm_create_destroy_cycles": 12,
+    "same_vcpu_idle_runs": 10,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "timer_cpus": [
+      0,
+      4
+    ]
+  },
+  "scope": "Kernel families and native local Docker container verified; isolated test network has no Android uplink; no production workload or Docker Swarm coverage"
+}

@@ -14,6 +14,7 @@ def run(*args, cwd=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('destination', type=Path, help='A new directory, outside this repository or under build/')
+    parser.add_argument('--profile', choices=['kvm', 'docker'], default='kvm')
     args = parser.parse_args()
     target = args.destination.resolve()
     if target.exists():
@@ -26,16 +27,19 @@ def main():
     actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=target).decode().strip()
     if actual != BASE:
         raise RuntimeError('Unexpected kernel base')
-    patch = REPO / 'kernel/a51-kvm.patch'
+    patches = [REPO / 'kernel/a51-kvm.patch']
+    if args.profile == 'docker':
+        patches.append(REPO / 'kernel/docker-cpuset.patch')
     # Some stock files use CRLF. The published diff omits pure newline changes.
-    for line in patch.read_text().splitlines():
-        if line.startswith('diff --git '):
-            name = line.split(' b/', 1)[1]
-            path = target / name
-            if path.is_file():
-                path.write_bytes(path.read_bytes().replace(b'\r\n', b'\n'))
-    run('git', 'apply', '--check', str(patch), cwd=target)
-    run('git', 'apply', str(patch), cwd=target)
+    for patch in patches:
+        for line in patch.read_text().splitlines():
+            if line.startswith('diff --git '):
+                name = line.split(' b/', 1)[1]
+                path = target / name
+                if path.is_file():
+                    path.write_bytes(path.read_bytes().replace(b'\r\n', b'\n'))
+        run('git', 'apply', '--check', str(patch), cwd=target)
+        run('git', 'apply', str(patch), cwd=target)
     print(f'Prepared pinned kernel {BASE} at {target}')
 
 if __name__ == '__main__':

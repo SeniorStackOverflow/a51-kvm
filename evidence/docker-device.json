@@ -1,0 +1,42 @@
+{
+  "kernel": "4.14.113-22755563-docker",
+  "kernel_build": "#3 SMP PREEMPT Tue Oct 6 11:35:45 EEST 2026",
+  "docker_version": "27.5.1",
+  "runc_version": "runc version 1.3.6\ncommit: v1.3.6-0-g491b69bab\nspec: 1.2.1\ngo: go1.25.11\nlibseccomp: 2.6.0",
+  "storage_driver": "overlay2",
+  "backing_filesystem": [
+    [
+      "Backing Filesystem",
+      "extfs"
+    ],
+    [
+      "Supports d_type",
+      "true"
+    ],
+    [
+      "Using metacopy",
+      "false"
+    ],
+    [
+      "Native Overlay Diff",
+      "true"
+    ],
+    [
+      "userxattr",
+      "false"
+    ]
+  ],
+  "cpuset_alias_reads_and_writes": true,
+  "primitives": "PASS namespace UTS\nPASS namespace IPC\nPASS namespace PID\nPASS namespace NET\nPASS namespace USER\nPASS namespace MOUNT\nPASS overlayfs mount/read/copy-up on tmpfs\nPASS cgroup devices\nPASS cgroup pids.max enforces fork limit\nPASS cgroup pids\nPASS cgroup blkio\nPASS seccomp filter denies getppid and allows getpid\nPASS all native Docker kernel primitives in this probe",
+  "network_passes": [
+    "PASS VETH pair and BRIDGE created, linked and brought up in private netns",
+    "PASS IPv4 NETFILTER NAT/MASQUERADE/addrtype/conntrack rules",
+    "PASS IPv6 NETFILTER NAT/MASQUERADE rules",
+    "PASS BRIDGE_NETFILTER per-bridge IPv4/IPv6 attributes enabled",
+    "PASS all isolated Docker networking checks"
+  ],
+  "container": "Kernel: 4.14.113-22755563-docker\nPID=1 UID=0\nSeccomp:\t2\nPASS native SYSVIPC shared memory\ncgroup memory=67108864 memory_swap=67108864 pids=32 cpu_quota=50000 cpu_period=100000\nPASS cpuset CPU affinity and CPU quota\nPASS Docker pids limit enforced at 32 tasks\nmemory child wait status=9 max_usage=67108864 failcnt=0\nPASS Docker memory cgroup killed only the over-limit child\nPASS UDP round trip through Docker veth and bridge\nPASS native Docker container, PID namespace, default seccomp, writable rootfs",
+  "boot_id_unchanged": true,
+  "selinux": "Enforcing",
+  "passed": true
+}

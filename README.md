@@ -24,6 +24,12 @@ Tested on **SM-A515F, Android 11, A515FXXU5EUJ4**, unlocked bootloader, kernel *
 | After reboot | Guest execution and both timer clusters passed again |
 | Recovery | Original signed UH restored through Download Mode; partition hash verified |
 
+An optional [native Docker profile](docs/docker.md) uses kernel
+`4.14.113-22755563-docker` and preserves this KVM backend. Hardware checks include
+an actual Docker container with overlay2, default seccomp, CPU affinity/quota,
+enforced memory/process limits and veth/bridge traffic. See the
+[Docker evidence](evidence/docker-summary.json) and build/Android compatibility details.
+
 The [sanitized hardware evidence](evidence/hardware-summary.json) records the measurements. This is a research prototype for **one audited firmware layout**. Full Linux guests, SMP guests, long-running workloads, suspend-to-RAM and other A51 variants remain untested. CI exercises a synthetic EL2 harness, separate from the handset results.
 
 ## Why a UH gateway?

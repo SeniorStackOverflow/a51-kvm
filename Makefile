@@ -8,10 +8,18 @@ OBJDUMP := $(CROSS)objdump
 NM := $(CROSS)nm
 CC := $(CROSS)gcc
 
-.PHONY: all gateway probes test check
+.PHONY: all gateway probes docker-probes test check
 all: gateway probes
 gateway: $(BUILD)/gateway.bin $(BUILD)/publisher.bin $(BUILD)/marker.bin $(BUILD)/symbols.txt
 probes: $(BUILD)/kvm-guest-probe $(BUILD)/kvm-timer-probe $(BUILD)/kvm-timer-guest.bin
+docker-probes: $(BUILD)/docker-kernel-probe $(BUILD)/docker-container-probe $(BUILD)/docker-daemon-launcher
+
+$(BUILD)/docker-kernel-probe: probes/docker/kernel.c | $(BUILD)
+	$(CC) -static -O2 -Wall -Wextra $< -o $@
+$(BUILD)/docker-container-probe: probes/docker/container.c | $(BUILD)
+	$(CC) -static -O2 -Wall -Wextra $< -o $@
+$(BUILD)/docker-daemon-launcher: probes/docker/launcher.c | $(BUILD)
+	$(CC) -static -O2 -Wall -Wextra $< -o $@
 
 $(BUILD):
 	mkdir -p "$@"
@@ -55,5 +63,6 @@ test: gateway $(BUILD)/test-gateway.bin
 	python3 tools/uh_image.py check-gateway --build $(BUILD)
 	python3 -m unittest discover -s tests -p 'test_*.py' -v
 
-check: all test
+check: all docker-probes test
 	python3 -m py_compile tools/*.py
+	python3 tools/check_docker_config.py

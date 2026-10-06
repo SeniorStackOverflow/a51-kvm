@@ -1,0 +1,83 @@
+diff --git a/init/Kconfig b/init/Kconfig
+index efc7000d9..4311ad968 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -906,6 +906,17 @@ config CPUSETS
+ 
+ 	  Say N if unsure.
+ 
++config A51_CPUSET_PREFIX_ALIAS
++	bool "Prefixed cpuset aliases on legacy noprefix mounts"
++	depends on CPUSETS
++	default n
++	help
++	  Keep the legacy cpus/mems names used by Android while also exposing
++	  cpuset.cpus/cpuset.mems and the other prefixed cpuset control files.
++	  Both names use the same controller callbacks and resource limits.
++	  Aliases are limited to cgroup v1 cpuset mounts with noprefix; normal
++	  mounts and cgroup v2 retain their upstream interface.
++
+ config PROC_PID_CPUSET
+ 	bool "Include legacy /proc/<pid>/cpuset file"
+ 	depends on CPUSETS
+diff --git a/kernel/cgroup/cgroup.c b/kernel/cgroup/cgroup.c
+index 01a8cf411..60691974b 100644
+--- a/kernel/cgroup/cgroup.c
++++ b/kernel/cgroup/cgroup.c
+@@ -1370,6 +1370,21 @@ static char *cgroup_file_name(struct cgroup *cgrp, const struct cftype *cft,
+ 	return buf;
+ }
+ 
++/* Android's legacy noprefix hierarchy is shared with native Linux runtimes. */
++static bool cgroup_cpuset_alias_name(struct cgroup *cgrp,
++				     const struct cftype *cft, char *buf)
++{
++	if (!IS_ENABLED(CONFIG_A51_CPUSET_PREFIX_ALIAS) || !cft->ss ||
++	    strcmp(cft->ss->name, "cpuset") || cgroup_on_dfl(cgrp) ||
++	    !(cgrp->root->flags & CGRP_ROOT_NOPREFIX) ||
++	    (cft->flags & CFTYPE_NO_PREFIX) || cft->file_offset)
++		return false;
++
++	snprintf(buf, CGROUP_FILE_NAME_MAX, "%s.%s",
++		 cft->ss->legacy_name, cft->name);
++	return true;
++}
++
+ /**
+  * cgroup_file_mode - deduce file mode of a control file
+  * @cft: the control file in question
+@@ -1525,6 +1540,9 @@ static void cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+ 		spin_unlock_irq(&cgroup_file_kn_lock);
+ 	}
+ 
++	if (cgroup_cpuset_alias_name(cgrp, cft, name))
++		kernfs_remove_by_name(cgrp->kn, name);
++
+ 	kernfs_remove_by_name(cgrp->kn, cgroup_file_name(cgrp, cft, name));
+ }
+ 
+@@ -3583,6 +3601,24 @@ static int cgroup_add_file(struct cgroup_subsys_state *css, struct cgroup *cgrp,
+ 		spin_unlock_irq(&cgroup_file_kn_lock);
+ 	}
+ 
++	if (cgroup_cpuset_alias_name(cgrp, cft, name)) {
++		struct kernfs_node *alias;
++
++		alias = __kernfs_create_file(cgrp->kn, name,
++					    cgroup_file_mode(cft), 0,
++					    cft->kf_ops, cft, NULL, key);
++		if (IS_ERR(alias)) {
++			kernfs_remove(kn);
++			return PTR_ERR(alias);
++		}
++		ret = cgroup_kn_set_ugid(alias);
++		if (ret) {
++			kernfs_remove(alias);
++			kernfs_remove(kn);
++			return ret;
++		}
++	}
++
+ 	return 0;
+ }
+ 

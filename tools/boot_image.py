@@ -33,7 +33,7 @@ def replace(original, image, system_map):
     require(len(image) > 64 and image[56:60] == b'ARM\x64', 'Not an uncompressed arm64 Image')
     require(b'A51 UH handoff gateway detected' in image and b'KVMEL2HAND_V1' in image, 'Handoff kernel markers missing')
     banner = re.search(rb'Linux version [^\x00]+', image)
-    require(banner is not None and banner.group().startswith(b'Linux version 4.14.113-22755563 ') and b'clang version 6.0.1' in banner.group(), 'Unexpected kernel version / toolchain')
+    require(banner is not None and re.match(rb'Linux version 4\.14\.113-22755563(?:-docker)? ', banner.group()) and b'clang version 6.0.1' in banner.group(), 'Unexpected kernel version / toolchain')
     names = ['__kvm_exynos_hyp_init', '__hyp_idmap_text_start', '__hyp_idmap_text_end', 'exynos_uh_forward', '__kvm_hyp_vector']
     symbols = {}
     for line in system_map.splitlines():
