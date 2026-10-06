@@ -1,0 +1,28 @@
+[    0.930099] kvm [1]: A51 UH handoff gateway detected
+[    0.930143] kvm [1]: 8-bit VMID
+[    0.932732] KVM_UH cpu=4 entering EL2 pgd=8f1826000 stack=ffffffc87182e000 forward=4001dae000
+[    0.932743] KVM_UH cpu=6 entering EL2 pgd=8f1826000 stack=ffffffc871830000 forward=4001daf000
+[    0.932752] KVM_UH cpu=5 entering EL2 pgd=8f1826000 stack=ffffffc87182f000 forward=4001dae800
+[    0.932760] KVM_UH cpu=7 entering EL2 pgd=8f1826000 stack=ffffffc871831000 forward=4001daf800
+[    0.932772] KVM_UH cpu=1 entering EL2 pgd=8f1826000 stack=ffffffc87182b000 forward=4001dac800
+[    0.932785] KVM_UH cpu=2 entering EL2 pgd=8f1826000 stack=ffffffc87182c000 forward=4001dad000
+[    0.932797] KVM_UH cpu=3 entering EL2 pgd=8f1826000 stack=ffffffc87182d000 forward=4001dad800
+[    0.932808] KVM_UH cpu=6 EL2 takeover returned
+[    0.932813] KVM_UH cpu=5 EL2 takeover returned
+[    0.932819] KVM_UH cpu=7 EL2 takeover returned
+[    0.932824] KVM_UH cpu=1 EL2 takeover returned
+[    0.932833] KVM_UH cpu=2 EL2 takeover returned
+[    0.932842] KVM_UH cpu=3 EL2 takeover returned
+[    0.932851] KVM_UH cpu=5 KVM per-CPU context ready
+[    0.932856] KVM_UH cpu=7 KVM per-CPU context ready
+[    0.932862] KVM_UH cpu=1 KVM per-CPU context ready
+[    0.932870] KVM_UH cpu=4 EL2 takeover returned
+[    0.932876] KVM_UH cpu=2 KVM per-CPU context ready
+[    0.932885] KVM_UH cpu=3 KVM per-CPU context ready
+[    0.932894] KVM_UH cpu=4 KVM per-CPU context ready
+[    0.932898] KVM_UH cpu=6 KVM per-CPU context ready
+[    0.932931] KVM_UH cpu=0 entering EL2 pgd=8f1826000 stack=ffffffc87182a000 forward=4001dac000
+[    0.932944] KVM_UH cpu=0 EL2 takeover returned
+[    0.932955] KVM_UH cpu=0 KVM per-CPU context ready
+[    0.933366] kvm [1]: vgic interrupt IRQ1
+[    0.933764] kvm [1]: Hyp mode initialized successfully

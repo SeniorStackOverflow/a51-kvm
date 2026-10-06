@@ -1,0 +1,109 @@
+{
+  "model": "SM-A515F",
+  "firmware": "A515FXXU5EUJ4",
+  "kernel": "4.14.113-22755563",
+  "passed": true,
+  "boot_id_unchanged": true,
+  "deep_idle_usage_deltas": [
+    4521,
+    4039,
+    4079,
+    4377,
+    456,
+    404,
+    395,
+    345
+  ],
+  "runs": [
+    {
+      "test": "guest",
+      "cpu": 0,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=0\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 1,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=1\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 2,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=2\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 3,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=3\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 4,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=4\nVM created, target=5\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 5,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=5\nVM created, target=5\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 6,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=6\nVM created, target=5\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 7,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=7\nVM created, target=5\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 0,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=0\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 4,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=4\nVM created, target=5\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 0,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=0\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "guest",
+      "cpu": 4,
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=4\nVM created, target=5\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000",
+      "passed": true
+    },
+    {
+      "test": "idle-migration",
+      "output": "Host CNTFRQ=26000000 Hz\nKVM API=12 cpu=0\nVM created, target=4\nEntering guest\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000\nPASS: same vCPU after idle on CPU 0\nPASS: same vCPU after idle on CPU 1\nPASS: same vCPU after idle on CPU 2\nPASS: same vCPU after idle on CPU 3\nPASS: same vCPU after idle on CPU 4\nPASS: same vCPU after idle on CPU 5\nPASS: same vCPU after idle on CPU 6\nPASS: same vCPU after idle on CPU 7\nPASS: same vCPU after idle on CPU 0\nPASS: same vCPU after idle on CPU 4",
+      "passed": true
+    },
+    {
+      "test": "timer",
+      "cpu": 0,
+      "output": "Entering guest with VGICv2 and virtual timer on CPU 0\nPASS: guest virtual timer fired; VGICv2 delivered PPI27 to guest IRQ handler on CPU 0",
+      "passed": true
+    },
+    {
+      "test": "timer",
+      "cpu": 4,
+      "output": "Entering guest with VGICv2 and virtual timer on CPU 4\nPASS: guest virtual timer fired; VGICv2 delivered PPI27 to guest IRQ handler on CPU 4",
+      "passed": true
+    }
+  ],
+  "scope": "Minimal single-vCPU execution, idle/migration and VGICv2/PPI27; no full guest OS"
+}

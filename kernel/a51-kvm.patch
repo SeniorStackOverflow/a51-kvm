@@ -1,0 +1,426 @@
+diff --git a/arch/arm64/include/asm/kvm_mmu.h b/arch/arm64/include/asm/kvm_mmu.h
+--- a/arch/arm64/include/asm/kvm_mmu.h
++++ b/arch/arm64/include/asm/kvm_mmu.h
+@@ -141,12 +141,20 @@
+  * obtain the address of a symbol (i.e. not something you obtained by
+  * following a pointer).
+  */
++/* Clang 6 does not implement the AArch64 S constraint. Both alternatives
++ * emit the same PC-relative ADRP/ADD relocation pair for a symbol. */
++#if defined(__clang__) && __clang_major__ <= 6
++#define HYP_SYMBOL_CONSTRAINT "i"
++#else
++#define HYP_SYMBOL_CONSTRAINT "S"
++#endif
++
+ #define hyp_symbol_addr(s)						\
+ 	({								\
+ 		typeof(s) *addr;					\
+ 		asm("adrp	%0, %1\n"				\
+ 		    "add	%0, %0, :lo12:%1\n"			\
+-		    : "=r" (addr) : "S" (&s));				\
++		    : "=r" (addr) : HYP_SYMBOL_CONSTRAINT (&s));				\
+ 		addr;							\
+ 	})
+ 
+@@ -176,6 +184,7 @@
+ phys_addr_t kvm_mmu_get_httbr(void);
+ phys_addr_t kvm_get_idmap_vector(void);
+ int kvm_mmu_init(void);
++int create_hyp_identity_mappings(phys_addr_t start, phys_addr_t end, pgprot_t prot);
+ void kvm_clear_hyp_idmap(void);
+ 
+ #define	kvm_set_pte(ptep, pte)		set_pte(ptep, pte)
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -75,3 +75,5 @@
+ ifeq ($(CONFIG_DEBUG_EFI),y)
+ AFLAGS_head.o += -DVMLINUX_PATH="\"$(realpath $(objtree)/vmlinux)\""
+ endif
++
++obj-$(CONFIG_VIRTUALIZATION) += exynos_el2_diag.o
+diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+--- a/arch/arm64/kernel/vmlinux.lds.S
++++ b/arch/arm64/kernel/vmlinux.lds.S
+@@ -217,7 +217,8 @@
+ 	BSS_SECTION(0, 0, 0)
+ 
+ 	. = ALIGN(PAGE_SIZE);
+-#ifndef CONFIG_UH
++/* RKP_RO_PGT supplies these only when RKP is enabled. */
++#ifndef CONFIG_UH_RKP
+ 	idmap_pg_dir = .;
+ 	. += IDMAP_DIR_SIZE;
+ 	swapper_pg_dir = .;
+diff --git a/arch/arm64/kvm/hyp-init.S b/arch/arm64/kvm/hyp-init.S
+--- a/arch/arm64/kvm/hyp-init.S
++++ b/arch/arm64/kvm/hyp-init.S
+@@ -63,6 +63,8 @@
+ 	cmp	x0, #HVC_STUB_HCALL_NR
+ 	b.lo	__kvm_handle_stub_hvc
+ 
++/* Entry from the UH gateway: native MMU and stage-2 are disabled. */
++ENTRY(__kvm_exynos_hyp_init)
+ 	msr	ttbr0_el2, x0
+ 
+ 	mrs	x4, tcr_el1
+@@ -126,7 +128,9 @@
+ 	mrs	x1, tpidr_el1
+ 	msr	tpidr_el2, x1
+ 
+-	/* Hello, World! */
++	/* Return to the original host HVC call. */
++	movz	w0, #0x4b56
++	movk	w0, #0xc0de, lsl #16
+ 	eret
+ ENDPROC(__kvm_hyp_init)
+ 
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -1003,6 +1003,13 @@
+ 		goto out;
+ 	}
+ 
++	/* A counter-only timer does not register or enable clock events.
++	 * Leave its unused PPI free for the KVM virtual timer handler.
++	 * Keep CPU callbacks: counter workarounds and CNTKCTL are still needed.
++	 */
++	if (arch_timer_use_clocksource_only)
++		goto skip_request_irq;
++
+ 	ppi = arch_timer_ppi[arch_timer_uses_ppi];
+ 	switch (arch_timer_uses_ppi) {
+ 	case ARCH_TIMER_VIRT_PPI:
+@@ -1035,6 +1042,7 @@
+ 		goto out_free;
+ 	}
+ 
++skip_request_irq:
+ 	err = arch_timer_cpu_pm_init();
+ 	if (err)
+ 		goto out_unreg_notify;
+@@ -1052,10 +1060,12 @@
+ 	arch_timer_cpu_pm_deinit();
+ 
+ out_unreg_notify:
+-	free_percpu_irq(arch_timer_ppi[arch_timer_uses_ppi], arch_timer_evt);
+-	if (arch_timer_has_nonsecure_ppi())
+-		free_percpu_irq(arch_timer_ppi[ARCH_TIMER_PHYS_NONSECURE_PPI],
+-				arch_timer_evt);
++	if (!arch_timer_use_clocksource_only) {
++		free_percpu_irq(arch_timer_ppi[arch_timer_uses_ppi], arch_timer_evt);
++		if (arch_timer_has_nonsecure_ppi())
++			free_percpu_irq(arch_timer_ppi[ARCH_TIMER_PHYS_NONSECURE_PPI],
++					arch_timer_evt);
++	}
+ 
+ out_free:
+ 	free_percpu(arch_timer_evt);
+diff --git a/firmware/Makefile b/firmware/Makefile
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -82,10 +82,10 @@
+ 		include/config/ppc32.h include/config/ppc64.h \
+ 		include/config/superh32.h include/config/superh64.h \
+ 		include/config/x86_32.h include/config/x86_64.h \
+-		firmware/Makefile)
++		$(srctree)/firmware/Makefile)
+ 
+ $(patsubst %,$(obj)/%.gen.S, $(fw-external-y)): %: $(wordsize_deps)
+-	$(call cmd,fwbin,$(fwabs)/$(patsubst $(obj)/%.gen.S,%,$@))
++	$(call cmd,fwbin,$(if $(wildcard $(fwabs)/$(patsubst $(obj)/%.gen.S,%,$@)),$(fwabs)/$(patsubst $(obj)/%.gen.S,%,$@),$(abspath $(objtree)/$(obj)/$(patsubst $(obj)/%.gen.S,%,$@))))
+ 
+ # The .o files depend on the binaries directly; the .S files don't.
+ $(patsubst %,$(obj)/%.gen.o, $(fw-external-y)): $(obj)/%.gen.o: $(fwdir)/%
+diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
+--- a/security/selinux/include/classmap.h
++++ b/security/selinux/include/classmap.h
+@@ -243,6 +243,6 @@
+ 	{ NULL }
+   };
+ 
+-#if PF_MAX > 44
++#if PF_MAX > 64
+ #error New address family defined, please update secclass_map.
+ #endif
+diff --git a/virt/kvm/arm/arm.c b/virt/kvm/arm/arm.c
+--- a/virt/kvm/arm/arm.c
++++ b/virt/kvm/arm/arm.c
+@@ -1130,6 +1130,8 @@
+ 	}
+ }
+ 
++#include "exynos_uh_kvm.inc"
++
+ static void cpu_init_hyp_mode(void *dummy)
+ {
+ 	phys_addr_t pgd_ptr;
+@@ -1138,20 +1140,26 @@
+ 	unsigned long vector_ptr;
+ 
+ 	/* Switch from the HYP stub to our own HYP init vector */
+-	__hyp_set_vectors(kvm_get_idmap_vector());
++	if (!exynos_uh_backend)
++		__hyp_set_vectors(kvm_get_idmap_vector());
+ 
+ 	pgd_ptr = kvm_mmu_get_httbr();
+ 	stack_page = __this_cpu_read(kvm_arm_hyp_stack_page);
+ 	hyp_stack_ptr = stack_page + PAGE_SIZE;
+ 	vector_ptr = (unsigned long)kvm_get_hyp_vector();
+ 
+-	__cpu_init_hyp_mode(pgd_ptr, hyp_stack_ptr, vector_ptr);
++	if (exynos_uh_backend)
++		exynos_uh_init_cpu(pgd_ptr, hyp_stack_ptr);
++	else
++		__cpu_init_hyp_mode(pgd_ptr, hyp_stack_ptr, vector_ptr);
+ 	__cpu_init_stage2();
+ }
+ 
+ static void cpu_hyp_reset(void)
+ {
+-	if (!is_kernel_in_hyp_mode())
++	if (exynos_uh_backend)
++		exynos_uh_reset_cpu();
++	else if (!is_kernel_in_hyp_mode())
+ 		__hyp_reset_vectors();
+ }
+ 
+@@ -1410,6 +1418,10 @@
+ 		}
+ 	}
+ 
++	err = exynos_uh_map();
++	if (err)
++		goto out_err;
++
+ 	err = hyp_map_aux_data();
+ 	if (err)
+ 		kvm_err("Cannot map host auxilary data: %d\n", err);
+@@ -1449,10 +1461,14 @@
+ 	int ret, cpu;
+ 	bool in_hyp_mode;
+ 
+-	if (!is_hyp_mode_available()) {
++	exynos_uh_backend = exynos_uh_probe();
++	if (!is_hyp_mode_available() && !exynos_uh_backend) {
+ 		kvm_info("HYP mode not available\n");
+ 		return -ENODEV;
+ 	}
++
++	if (exynos_uh_backend)
++		kvm_info("A51 UH handoff gateway detected\n");
+ 
+ 	for_each_online_cpu(cpu) {
+ 		smp_call_function_single(cpu, check_kvm_target_cpu, &ret, 1);
+diff --git a/virt/kvm/arm/mmu.c b/virt/kvm/arm/mmu.c
+--- a/virt/kvm/arm/mmu.c
++++ b/virt/kvm/arm/mmu.c
+@@ -657,6 +657,13 @@
+ out:
+ 	mutex_unlock(&kvm_hyp_pgd_mutex);
+ 	return err;
++}
++
++int create_hyp_identity_mappings(phys_addr_t start, phys_addr_t end, pgprot_t prot)
++{
++	if (__kvm_cpu_uses_extended_idmap())
++		return -EOPNOTSUPP;
++	return __create_hyp_mappings(hyp_pgd, start, end, __phys_to_pfn(start), prot);
+ }
+ 
+ static phys_addr_t kvm_kaddr_to_phys(void *kaddr)
+diff --git a/arch/arm64/kernel/exynos_el2_diag.c b/arch/arm64/kernel/exynos_el2_diag.c
+new file mode 100644
+--- /dev/null
++++ b/arch/arm64/kernel/exynos_el2_diag.c
+@@ -0,0 +1,59 @@
++/* Diagnostic only: no takeover, no monitor SMC, no VM execution. */
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/smp.h>
++#include <linux/string.h>
++#include <linux/uh.h>
++#include <asm/memory.h>
++
++#define EL2_DIAG_REQUEST 0xc3004b56UL
++#define EL2_DIAG_RESPONSE 0xc0de4b56UL
++#define EL2_DIAG_STAMP_PA UH_LOG_START
++static const char el2_diag_stamp[] = "KVMEL2DIAG_V1";
++
++static void exynos_el2_diag_cpu(void *unused)
++{
++	unsigned long command;
++	for (command = 0; command < 2; command++) {
++	register unsigned long x0 asm("x0") = EL2_DIAG_REQUEST;
++	register unsigned long x1 asm("x1") = command;
++	register unsigned long x2 asm("x2") = 0;
++	register unsigned long x3 asm("x3") = 0;
++	register unsigned long x4 asm("x4") = 0;
++	register unsigned long x5 asm("x5") = 0;
++
++	asm volatile("dsb sy\n\thvc #0\n\tisb"
++		: "+r" (x0), "+r" (x1), "+r" (x2), "+r" (x3), "+r" (x4), "+r" (x5)
++		: : "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13",
++		    "x14", "x15", "x16", "x17", "cc", "memory");
++	if (x0 != EL2_DIAG_RESPONSE || x1 != 8) {
++		pr_err("EXYNOS_EL2_DIAG cpu=%u invalid reply=%lx CurrentEL=%lx\n",
++		       smp_processor_id(), x0, x1);
++		return;
++	}
++	if (!command)
++		pr_info("EXYNOS_EL2_DIAG cpu=%u CurrentEL=%lx HCR=%lx MPIDR=%lx SCTLR=%lx VBAR=%lx\n",
++			smp_processor_id(), x1, x2, x3, x4, x5);
++	else
++		pr_info("EXYNOS_EL2_DIAG cpu=%u CurrentEL=%lx TTBR0=%lx TCR=%lx MAIR=%lx SP=%lx\n",
++			smp_processor_id(), x1, x2, x3, x4, x5);
++	}
++}
++
++static int __init exynos_el2_diag_init(void)
++{
++	const char *stamp = phys_to_virt(EL2_DIAG_STAMP_PA);
++
++	/* Only the shared UH log is readable from EL1. UH text reads cause
++	 * TIMA_RKP_VMM_PANIC even with CONFIG_UH_RKP disabled in Linux.
++	 * The custom UH must publish this stamp in its shared log; stock UH
++	 * never publishes it, so no diagnostic HVC is issued on stock UH.
++	 */
++	if (memcmp(stamp, el2_diag_stamp, sizeof(el2_diag_stamp))) {
++		pr_info("EXYNOS_EL2_DIAG: custom bootstrap stamp absent; no HVC issued\n");
++		return 0;
++	}
++	on_each_cpu(exynos_el2_diag_cpu, NULL, 1);
++	return 0;
++}
++late_initcall(exynos_el2_diag_init);
+diff --git a/virt/kvm/arm/exynos_uh_kvm.inc b/virt/kvm/arm/exynos_uh_kvm.inc
+new file mode 100644
+--- /dev/null
++++ b/virt/kvm/arm/exynos_uh_kvm.inc
+@@ -0,0 +1,124 @@
++/* A515FXXU5EUJ4 UH gateway, paired with KVMEL2HAND_V1.
++ * UH text is never read from EL1. Firmware's original VBAR is retained;
++ * per-CPU forwarders preserve x16/x17 and the normal KVM BP vector.
++ */
++#if defined(CONFIG_ARM64) && defined(CONFIG_UH) && defined(CONFIG_SOC_EXYNOS9610)
++#include <linux/uh.h>
++#include <linux/string.h>
++
++#define EXYNOS_UH_REQUEST 0xc3004b56UL
++#define EXYNOS_UH_REPLY   0xc0de4b56UL
++#define EXYNOS_UH_VBAR    0x8701c000UL
++extern char __kvm_exynos_hyp_init[];
++static bool exynos_uh_backend;
++static DEFINE_PER_CPU(bool, exynos_uh_active);
++static DEFINE_PER_CPU(unsigned int, exynos_uh_takeovers);
++static u32 exynos_uh_forward[NR_CPUS][512] __aligned(2048)
++	__attribute__((section(".data"))) = {{0xd503201f}};
++
++static unsigned long exynos_uh_call(unsigned long cmd, unsigned long entry,
++		unsigned long pgd, unsigned long stack, unsigned long vector,
++		unsigned long forward)
++{
++	register unsigned long x0 asm("x0") = EXYNOS_UH_REQUEST;
++	register unsigned long x1 asm("x1") = cmd;
++	register unsigned long x2 asm("x2") = entry;
++	register unsigned long x3 asm("x3") = pgd;
++	register unsigned long x4 asm("x4") = stack;
++	register unsigned long x5 asm("x5") = vector;
++	register unsigned long x6 asm("x6") = forward;
++	asm volatile("dsb sy\n\thvc #0\n\tisb"
++		: "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6)
++		: : "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15",
++		    "x16", "x17", "cc", "memory");
++	return x0;
++}
++
++static bool exynos_uh_probe(void)
++{
++	static const char stamp[] = "KVMEL2HAND_V1";
++	return !memcmp(phys_to_virt(UH_LOG_START), stamp, sizeof(stamp));
++}
++
++static void exynos_uh_make_forwarder(void *error)
++{
++	unsigned int cpu = smp_processor_id(), slot;
++	u32 *code = exynos_uh_forward[cpu];
++	unsigned long start = kern_hyp_va((unsigned long)
++		kvm_ksym_ref(exynos_uh_forward) + cpu * sizeof(*exynos_uh_forward));
++	unsigned long target = kern_hyp_va((unsigned long)kvm_get_hyp_vector());
++	for (slot = 0; slot < 16; slot++) {
++		long delta = target + slot * 128 - (start + slot * 128 + 4);
++		if ((delta & 3) || delta < -(1L << 27) || delta >= (1L << 27)) {
++			WRITE_ONCE(*(int *)error, -ERANGE);
++			return;
++		}
++		code[slot * 32] = 0xa8c247f0; /* ldp x16,x17,[sp],#32 */
++		code[slot * 32 + 1] = 0x14000000 | ((delta >> 2) & 0x03ffffff);
++	}
++	flush_icache_range((unsigned long)code, (unsigned long)(code + 512));
++}
++
++static int exynos_uh_map(void)
++{
++	int err = 0;
++	if (!exynos_uh_backend)
++		return 0;
++	/* Only EL2 receives these mappings; EL1 does not touch UH memory. */
++	err = create_hyp_identity_mappings(0x8701b000, 0x8701e000, PAGE_HYP_EXEC);
++	if (err)
++		return err;
++	err = create_hyp_identity_mappings(0x87045000, 0x87046000, PAGE_HYP);
++	if (err)
++		return err;
++	err = create_hyp_mappings(kvm_ksym_ref(exynos_uh_forward),
++		kvm_ksym_ref(exynos_uh_forward) + sizeof(exynos_uh_forward), PAGE_HYP_EXEC);
++	if (err)
++		return err;
++	on_each_cpu(exynos_uh_make_forwarder, &err, 1);
++	return err;
++}
++
++static void exynos_uh_init_cpu(phys_addr_t pgd, unsigned long stack)
++{
++	u64 tpidr;
++	unsigned int cpu = smp_processor_id();
++	bool first = !__this_cpu_read(exynos_uh_takeovers);
++	unsigned long forward = kern_hyp_va((unsigned long)kvm_ksym_ref(exynos_uh_forward)
++		+ cpu * sizeof(*exynos_uh_forward));
++	BUG_ON(!static_branch_likely(&arm64_const_caps_ready));
++	/* Rebuild for CPUs that were offline during init, using that CPU's BP slot. */
++	{
++		int err = 0;
++		exynos_uh_make_forwarder(&err);
++		BUG_ON(err);
++	}
++	if (first)
++		pr_info("KVM_UH cpu=%u entering EL2 pgd=%llx stack=%lx forward=%lx\n",
++			cpu, (unsigned long long)pgd, stack, forward);
++	BUG_ON(exynos_uh_call(2, __pa_symbol(__kvm_exynos_hyp_init), pgd, stack,
++		EXYNOS_UH_VBAR, forward) != EXYNOS_UH_REPLY);
++	if (first)
++		pr_info("KVM_UH cpu=%u EL2 takeover returned\n", cpu);
++	__this_cpu_write(exynos_uh_active, true);
++	tpidr = (u64)this_cpu_ptr(&kvm_host_cpu_state) - (u64)kvm_ksym_ref(kvm_host_cpu_state);
++	kvm_call_hyp(__kvm_set_tpidr_el2, tpidr);
++	__this_cpu_inc(exynos_uh_takeovers);
++	if (first)
++		pr_info("KVM_UH cpu=%u KVM per-CPU context ready\n", cpu);
++}
++
++static void exynos_uh_reset_cpu(void)
++{
++	if (!__this_cpu_read(exynos_uh_active))
++		return;
++	BUG_ON(exynos_uh_call(3, 0, 0, 0, 0, 0) != EXYNOS_UH_REPLY);
++	__this_cpu_write(exynos_uh_active, false);
++}
++#else
++static const bool exynos_uh_backend;
++static inline bool exynos_uh_probe(void) { return false; }
++static inline int exynos_uh_map(void) { return 0; }
++static inline void exynos_uh_init_cpu(phys_addr_t pgd, unsigned long stack) {}
++static inline void exynos_uh_reset_cpu(void) {}
++#endif

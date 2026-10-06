@@ -1,0 +1,11 @@
+{
+  "time_utc": "2026-10-05T18:27:58.267666+00:00",
+  "download_flash_completed": true,
+  "android_boot_confirmed": true,
+  "original_uh_hash_verified": true,
+  "original_uh_sha256": "ebdf765c5087cd1953b2e4a11878a65611b2705618c0a31ed05b1419c4571574",
+  "wire_size": 284056,
+  "full_partition_size": 2097152,
+  "manual_download_entry": "User confirmed twice",
+  "first_attempt": "Full padded partition dump rejected with SECURE CHECK FAIL UH; flash accepted after removing only trailing partition padding"
+}

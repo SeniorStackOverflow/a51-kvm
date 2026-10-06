@@ -1,0 +1,29 @@
+name: Offline validation
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gateway-and-probes:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross tools and QEMU
+        run: sudo apt-get update && sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu qemu-system-arm
+      - name: Build and exercise EL2 handoff
+        run: make check
+      - name: Upload our generated code and test output
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-and-probes
+          path: |
+            build/*.bin
+            build/handoff-result.txt
+  kernel-patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check patch against the pinned Samsung source
+        run: python3 tools/prepare_kernel.py build/kernel-src

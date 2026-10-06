@@ -1,0 +1,7 @@
+{
+  "kernel_patch_applies_and_matches_hardware_sources": true,
+  "offline_gateway_test": "PASS: four takeover/restore cycles",
+  "uh_packer_exact_hardware_artifact": true,
+  "boot_packer_exact_hardware_artifact": true,
+  "samsung_firmware_fixture": "local only; not published"
+}

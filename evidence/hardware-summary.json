@@ -1,0 +1,49 @@
+{
+  "time_utc": "2026-10-06T06:58:37.078263+00:00",
+  "model": "SM-A515F",
+  "firmware": "A515FXXU5EUJ4",
+  "kernel": "Linux localhost 4.14.113-22755563 #7 SMP PREEMPT Tue Oct 6 09:43:54 EEST 2026 aarch64",
+  "hashes": {
+    "boot": "97e486fb4f1ce8e5f420231a4e48369228b04398f022b1d3079bea3cdc5a7727",
+    "uh": "d05d6cdfc282c953d3b048c42fdc77279c2f996a2ed76e36c87fd4c9ff21273a",
+    "recovery": "adfeb29ae4c428e974c2eb386189da26fe6f51e71fa11704e75368bd4a5fcd44",
+    "dtbo": "2073c48fa8173b4312842a66271cc475534427faac743b76314bc55846947f47",
+    "uhcfg": "bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8",
+    "vbmeta": "599e75c937b3b6c9ce311ae0cdf9cee3aef0f6b703a78cd76ae51432aeba290f",
+    "vbmeta_samsung": "1cd0b18b9c3df6012db85161a297015066bea6433a051c8b1c72e907812bf5a2"
+  },
+  "android_boot_completed": true,
+  "root": true,
+  "kvm_device": "crw------- 1 root root 10, 232 2026-10-06 09:55 /dev/kvm",
+  "kvm_api": 12,
+  "working_kvm": true,
+  "hardware_guest": "KVM_CREATE_VM + KVM_ARM_VCPU_INIT + KVM_RUN; guest mov/mov/str writes 42 to MMIO 0x100000",
+  "all_eight_cpus_passed": true,
+  "create_destroy_cycles": 12,
+  "same_vcpu_idle_migration_passed": true,
+  "cpu_sleep_deltas": {
+    "/sys/devices/system/cpu/cpu0/cpuidle/state1": 3719,
+    "/sys/devices/system/cpu/cpu1/cpuidle/state1": 3458,
+    "/sys/devices/system/cpu/cpu2/cpuidle/state1": 4172,
+    "/sys/devices/system/cpu/cpu3/cpuidle/state1": 4718,
+    "/sys/devices/system/cpu/cpu4/cpuidle/state1": 2434,
+    "/sys/devices/system/cpu/cpu5/cpuidle/state1": 2076,
+    "/sys/devices/system/cpu/cpu6/cpuidle/state1": 1983,
+    "/sys/devices/system/cpu/cpu7/cpuidle/state1": 1292
+  },
+  "vgic_v2_and_guest_virtual_timer_passed": true,
+  "timer_clusters": [
+    0,
+    4
+  ],
+  "normal_reboot_passed": true,
+  "guest_and_timer_after_reboot_passed": true,
+  "recovery_dtbo_uhcfg_vbmeta_unchanged": true,
+  "evidence_policy": "Curated from local hardware logs; serials, boot UUIDs and full Android logs omitted.",
+  "limits": [
+    "One SM-A515F / A515FXXU5EUJ4 handset",
+    "Minimal single-vCPU guests, no full guest OS tested",
+    "No long-term or suspend-to-RAM validation",
+    "Modified UH Download Mode flashing not tested"
+  ]
+}

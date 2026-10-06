@@ -1,0 +1,19 @@
+{
+  "started_utc": "2026-10-06T06:53:31.713909+00:00",
+  "runs": [
+    {
+      "cpu": 0,
+      "returncode": 0,
+      "output": "Entering guest with VGICv2 and virtual timer on CPU 0\r\nPASS: guest virtual timer fired; VGICv2 delivered PPI27 to guest IRQ handler on CPU 0\r\n",
+      "passed": true
+    },
+    {
+      "cpu": 4,
+      "returncode": 0,
+      "output": "Entering guest with VGICv2 and virtual timer on CPU 4\r\nPASS: guest virtual timer fired; VGICv2 delivered PPI27 to guest IRQ handler on CPU 4\r\n",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "boot_id_unchanged": true
+}

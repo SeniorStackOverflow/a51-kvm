@@ -1,0 +1,16 @@
+{
+  "started_utc": "2026-10-06T06:56:37.663193+00:00",
+  "test": "KVM API 12, CREATE_VM, VCPU_INIT, KVM_RUN; guest mov/mov/str causes MMIO write 42 at 0x100000",
+  "runs": [
+    {
+      "cpu": 0,
+      "returncode": 0,
+      "output": "Host CNTFRQ=26000000 Hz\r\nKVM API=12 cpu=0\r\nVM created, target=4\r\nEntering guest\r\nPASS: hardware KVM guest executed mov/mov/str; MMIO write 42 at 0x100000\r\n",
+      "passed": true
+    }
+  ],
+  "completed_utc": "2026-10-06T06:56:38.996512+00:00",
+  "passed": true,
+  "boot_id_unchanged": true,
+  "kernel": "Linux localhost 4.14.113-22755563 #7 SMP PREEMPT Tue Oct 6 09:43:54 EEST 2026 aarch64"
+}

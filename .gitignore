@@ -1,0 +1,14 @@
+/build/
+/private/
+/dist/
+__pycache__/
+*.pyc
+*.img
+*.tar
+*.tar.gz
+*.zip
+*.elf
+*.o
+*.bin
+*.log
+/.venv/
